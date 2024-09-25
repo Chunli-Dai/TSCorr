@@ -1,0 +1,15 @@
+{ 
+    "base_image_path": "base.tif",
+    "target_image_path": "target.tif",
+    "base_band": 1,
+    "target_band": 1,
+    "output_path": "correlation_base_vs_target",
+    "correlator_name": "frequency",
+    "correlator_params": {
+        "window_size": [32, 32, 32, 32],
+        "step": [4, 4],
+        "grid": false,
+        "mask_th": 0.9,
+        "nb_iters": 3
+    }
+}
