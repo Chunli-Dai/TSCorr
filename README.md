@@ -1,6 +1,17 @@
 # TSCorr
 Time-Series image Correlation software (TSCorr)
 
+Steps:
+1\ cp /home/chunlidai/blue/apps/horizontalv/template/* .
+2\ modify tilelist
+3\ Update imagedir in constant.m
+   Update projgdal, projstrin if you are running ArcticDEM tiles.
+4\ #Get mat0.mat # This step only needs to be done once for each folder of images.
+sbatch job_nov.slurm #run Tilemain_nov.m to get mat0.mat.
+5\ #bundle all jobs
+./compile.sh
+nohup ./run_change_group_pgc_par.sh > outrun1 &
+
 
 
 Reference:
