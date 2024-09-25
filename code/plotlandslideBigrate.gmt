@@ -1,0 +1,190 @@
+#!/bin/sh 
+## Modified from /0/home/dai.56/Osuwork/Altimetry/icesatFromKun/plottrendzoom
+
+#gmtset ANNOT_FONT_SIZE 14
+gmtset HEADER_OFFSET 0.1c
+gmtset HEADER_FONT_SIZE 8
+#gmtset ANNOT_FONT_PRIMARY 0
+gmtset FONT_ANNOT_PRIMARY 8
+gmtset PAPER_MEDIA letter
+gmtset TICK_LENGTH 0.1c
+gmtset LABEL_OFFSET 0.15c
+#gmtset FRAME_WIDTH 0.05
+gmtset FRAME_PEN 1p
+gmtset BASEMAP_TYPE plain
+gmtset PLOT_DEGREE_FORMAT +ddd
+gmtset COLOR_BACKGROUND gray30
+#gmtset MAP_FRAME_TYPE inside
+gmt set FORMAT_GEO_MAP ddd:mm
+
+makecpt -T0/3500/100 -Cgray.cpt -Z  > topo.cpt
+makecpt -T-200/900/100 -Cmby.cpt -Z > topo.cpt
+makecpt -T-1000/1000/50 -Cmby.cpt -Z  > topo.cpt
+makecpt -T-1000/1000/50 -Cgray.cpt -Z  > topo.cpt
+#region='-R-141.215/-141.12/60.15/60.195'
+region='-R-74/-73/70/71'
+region='-R-75/-72.5/69.73333/70.46666' #-75/-72.5/69d44m/70d28m
+#region='-R-75.781835/-71.536214/69.356867/70.816823'  #<69.356867/70.816823>	<-75.781835/-71.536214
+region='-R-75/-71.5/69.4/70.6' #big
+region='-R-38.6/-37.9/66.28/66.48'
+region='-R-38.55/-38/66.28/66.43'
+region='-R-148.310/-148.040/61.039/61.221'  #Barry
+region='-R-148.282/-148.040/61.0750/61.183'  #Barry 148.02307
+#projection='-JM6i'
+projection='-JM3.5i'
+projection='-JM3i'
+#projection='-Js-140/90/1000.0i/45'
+#projection='-JT140/38/3i' # plain frame
+
+base=base.ps
+ofile='rate.ps'
+
+# base figure
+if true
+then
+#psbasemap $region $projection -Ba10m/a4mWSne:.: -K -V  > $base
+psbasemap $region $projection -Ba5m/a1mWSne:.: -K -V  > $base
+awk '{print $2, $1,$3}' demref.dat > xy
+#surface xy  $region -I1s -Gban.grd #1s =30m
+#xyz2grd xy  $region -I3s -Gban.grd
+xyz2grd xy  $region -I0.3s -Gban.grd
+#awk '{print ($2 >180)?$2-360:$2, $1,$3}' etopo1_JPfmt.xyz > xy
+#surface xy  $region -I1m -Gban.grd
+grdgradient ban.grd -A300 -Gsrtm.grad -Ne0.6 
+gmt grdhisteq srtm.grad -Ghillshade-hist.nc -N -V
+gmt grdmath hillshade-hist.nc 2 DIV = hillshade-int.nc
+#grdgradient ban.grd -A90/90 -Gsrtm.grad -Ne0.7 
+grdimage ban.grd -B -R -J -K -O -V -Ctopo.cpt -Ihillshade-int.nc >> $base
+psxy temp -J -R -B -m -O -W0.1p,gray20 -V -K >> $base
+#pscoast -R $projection -I2/1.2p,lightblue -I1/1.2p,lightblue -N1/1p,black -Slightblue -Di -W -K -O -V >> $base
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#exit
+fi
+#makecpt -T-1/1/0.1 -I -Cjet2.cpt -Z > trend.cpt
+#makecpt -T-500/500/0.1 -Cjet2.cpt -Z > trend.cpt
+#makecpt -T-30/30/0.1 -Cjet2.cpt -Z > trend.cpt
+cp control.cpt trend.cpt
+makecpt -T-8/8/0.1  -Cjet2.cpt -Z > trend.cpt
+
+cp $base $ofile
+
+psbasemap $region $projection -B -K -O -V >>$ofile
+#awk '{print $2, $1,$3/100}' tmp3> xy  #decimeter
+#xyz2grd xy $region -I30s -Gx.grd  #
+
+awk '{print $1, $2,$3}' rate.txt > xy   #mm
+awk '{if ($4>0 ) print $1, $2,$3}' rate.txt > xy   #mm
+#awk '{if ($4>0 && $3>1.5) print $1, $2,$3}' rate.txt > xy   #mm
+xyz2grd xy $region -I40s -Gx.grd  #1s =30meter 600m
+
+grdimage x.grd -Ctrend.cpt -J -R -V -t50 -K -O >> $ofile
+#pscoast -R $projection -Slightblue -Di -W -K -O -V >> $ofile
+#pscoast -R $projection -Ia/1.2p,lightblue -I1/1.2p,lightblue -N1/1p,black -Slightblue -Di -W -K -O -V >> $ofile
+#pscoast -R $projection -I2/1.2p,lightblue -I1/1.2p,lightblue -N1/1p,black -Di -W -K -O -V >> $ofile
+
+#contour # ~/Osuwork/GRACE/Mar11JPEQ_gravitygradients/plotSliptopo_io_JP.gmt
+dcont=300
+echo 0 0 > fix1.d
+#water contour bad
+#grdcontour ban.grd $region $projection -O -K -A"$dcont"+ap+f6 -W0.4p,gray >> $ofile 
+#grdcontour ban.grd $region $projection -O -K -A"$dcont"+ap+f6 -W0.6p,black -Gffix1.d/0.1i  >> $ofile 
+#Add slab contour
+CONTOURFILE=contourl.dat
+#psxy $CONTOURFILE -J -R -P -W2p,34/139/34 -O -K -V  >> $ofile #forest green
+#notation
+#echo 143.31  40.00 10 0 3 MC 20 m | pstext -R -J -K -O -F+a45 >> $ofile
+
+
+#psxy riv.dat -Ss0.03i -Glightblue -J -R -V -K -O >> $ofile
+psxy scarpxylonlat.dat -W1.6p,black -J -R -V -K -O >> $ofile
+#psxy box1.dat -W1.0p,black,-- -J -R -V -K -O >> $ofile
+#psxy acrossprof2BB.dat -W1.0p,cyan -J -R -V -K -O >> $ofile
+#psxy frontpositionxy.txt -W1.0p,cyan -J -R -V -K -O >> $ofile
+#psxy icelonlat2007.txt -W0.5p,black -J -R -V -K -O >> $ofile
+#psxy waterlonlat.txt -W0.5p,blue -J -R -V -K -O >> $ofile
+#psxy frontoutlines/20200310_frontoutline.txt -W1.0p,magenta -J -R -V -K -O >> $ofile
+psxy -St0.1i -W2.0p,cyan -J -R -V -K -O >> $ofile <<EOF
+#-148.1531   61.1347
+#-148.1357   61.1529
+EOF
+
+psxy icebridge_IDHDT4_seg2.gmt -Ss0.03i -Ggreen -J -R -V -K -O >> $ofile
+#psxy icebridge_IDHDT4_seg2_office.gmt -Ss0.03i -Ggray -J -R -V -K -O >> $ofile
+#box of 20km zone for icesat plotlandslide20km.gmt '-73.0833/-72.9827/69.8526/70.0128'; #20km
+psxy $region $projection -W1.0p,black -K -O -V >>$ofile  << END
+-73.0833 69.8526
+-72.9827 69.8526
+-72.9827 70.0128
+-73.0833 70.0128
+-73.0833 69.8526
+END
+
+if true
+then
+psxy $region $projection -Sc0.1i -W2.0p,white -K -O -V >>$ofile  << END
+#-1.4118490e+02  6.0178293e+01 
+-38.381299595       66.37680335  #tp4 in /home/dai.56/chunliwork/ice/Helheim1/run1coregflag3_2014toall
+-148.1479  61.1464 #tp1 in /Users/chunlidai/ArchivedBoxSync/NSFDRRG2020/rundata/BarryArm/tp1.fig
+END
+#scale
+
+#scale 0.0104 =200m
+#scale=500;lat=60;scale/(6371e3*cos(lat*pi/180))*180/pi
+scale=4000; scalec='4 km'
+latl=`echo $region |awk -F'[R/]' '{printf "%e", $4+($5-$4)/7}' `
+lonl=`echo $region |awk -F'[R/]' '{printf "%e", $2+($3-$2)/5/2}' `
+dlon=`echo $latl $scale |awk '{printf "%e", $2/(6371e3*cos($1*3.14/180))*180/3.14}'`
+lonr=`echo $lonl $dlon | awk '{printf "%e", $1+$2}' `
+lonm=`echo $lonl $dlon | awk '{printf "%e", $1+$2/2}' `
+latu=`echo $latl $dlon | awk '{printf "%e", $1+$2/20}' `
+
+echo $scale $latl $latu $dlon $lonl $lonr $lonm
+echo $lonl $latl
+echo $lonr $latl
+
+if false
+then
+psxy $region $projection -W2.0p,black -K -O -V >>$ofile  << END
+$lonl $latl
+$lonr $latl
+END
+else
+psxy $region $projection -W2.5p,black -K -O -V >>$ofile  << END
+$lonl 61.087
+$lonr 61.087
+END
+latu=61.092
+fi
+#echo $lonm $latu 12 0 0 MC $scalec | pstext -R -S1.5p -J -K -O  >>  $ofile
+#echo $lonm $latu 12 0 0 MC $scalec | pstext -R  -J  -F+a0,+f16p,Helvetica-Bold,white  -K -O >>  $ofile
+echo $lonm $latu 8 0 0 MC $scalec | pstext -R  -J  -F+a0,+f8p,Helvetica-Bold,black  -K -O >>  $ofile
+
+#End of scale
+
+echo -141.2 60.1980 14 0 3 MC 2015 | pstext -R -J -K -O >> $ofile
+echo -141.2  60.190  14 0 3 MC Landslide| pstext -R -J -K -O >> $ofile
+psvelo $region $projection -Se0.01/0.95/25 -O -W2.0p,black -L -V -K -P >> $ofile << END
+#Long.    Lat.   Vu     σVu
+-141.200 60.185 10 -30  0 0  0
+END
+#echo -141.1383 60.1793 14 0 3 MC Glacier | pstext -R -J -K -O >> $ofile
+#echo -141.1383 60.1765 14 0 3 MC Melting| pstext -R -J -K -O >> $ofile
+psvelo $region $projection -Se0.01/0.95/25 -O -W1.0p,black -L -V -K -P >> $ofile << END
+#Long.    Lat.   Vu     σVu
+#-141.1493 60.1783 -99 0  0 0  0
+END
+echo -141.1130 60.2167 10 0 3 MC Tyndall | pstext -R -J -K -O >> $ofile
+echo -141.1300 60.2000 10 0 3 MC Glacier| pstext -R -J -K -O >> $ofile
+echo -141.1553 60.1467 10 0 3 MC Taan | pstext -R -J -K -O >> $ofile
+echo -141.1633 60.1333 10 0 3 MC Fiord | pstext -R -J -K -O >> $ofile
+fi
+#echo -141.1633 60.1333 10 0 3 MC Fiord | pstext -R -J  -O >> $ofile
+
+#psscale -E -Ctopo.cpt  -D1.75i/-0.5i/3.0i/0.1ih -B500:"Surface Elevation (m)":/:: -O --MAP_LABEL_OFFSET=-1.0c --FONT_LABEL=8 --MAP_FRAME_PEN=0.3p >> $ofile
+psscale -E -Ctrend.cpt -D1.5i/-0.5i/3i/0.1ih -B2:"Horizontal motion rate (m/yr)":/:: -O --MAP_LABEL_OFFSET=-1.3c --FONT_LABEL=10 --MAP_FRAME_PEN=0.3p >> $ofile
+#psscale -E -Ctrend.cpt -D3.25i/-0.6i/5.0i/0.15ih -B10:"Elevation change (m)":/:: -O --MAP_LABEL_OFFSET=-1.7c --FONT_LABEL=14 --MAP_FRAME_PEN=0.3p >> $ofile
+
+#ps2raster $ofile -Tj -E720 -A
+ps2raster $ofile -Tj -A -P
+#rm -f $ofile
+
